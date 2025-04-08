@@ -1,4 +1,5 @@
 #include <iostream>
+#include <mutex>
 using namespace std;
 
 class TaskQueue {
@@ -9,7 +10,13 @@ class TaskQueue {
     // Lazy Initialization is not thread-safe
     static TaskQueue* get_instance() {
         if (task_queue_ == nullptr) {
-            task_queue_ = new TaskQueue;
+            mutex_.lock();
+
+            if (task_queue_ == nullptr) {
+                task_queue_ = new TaskQueue;
+            }
+            
+            mutex_.unlock();
         }
 
         return task_queue_;
@@ -23,9 +30,11 @@ class TaskQueue {
     TaskQueue() = default;
 
     static TaskQueue* task_queue_;
+    static mutex mutex_;
 };
 
 TaskQueue* TaskQueue::task_queue_ = nullptr;
+mutex TaskQueue::mutex_;
 
 int main() {
     TaskQueue* task_queue = TaskQueue::get_instance();
