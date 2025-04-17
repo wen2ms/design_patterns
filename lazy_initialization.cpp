@@ -1,5 +1,6 @@
 #include <iostream>
 #include <mutex>
+#include <atomic>
 using namespace std;
 
 class TaskQueue {
@@ -8,18 +9,22 @@ class TaskQueue {
     TaskQueue& operator =(const TaskQueue& other) = delete;
 
     // Lazy Initialization is not thread-safe
+    // Must use atmoic to ensure thread-safe 
     static TaskQueue* get_instance() {
-        if (task_queue_ == nullptr) {
-            mutex_.lock();
+        TaskQueue* task = task_queue_.load();
 
-            if (task_queue_ == nullptr) {
-                task_queue_ = new TaskQueue;
+        if (task == nullptr) {
+            mutex_.lock();
+            TaskQueue* task = task_queue_.load();
+            if (task == nullptr) {
+                task = new TaskQueue;
+                task_queue_.store(task);
             }
             
             mutex_.unlock();
         }
 
-        return task_queue_;
+        return task;
     }
 
     void foo() {
@@ -29,11 +34,11 @@ class TaskQueue {
   private:
     TaskQueue() = default;
 
-    static TaskQueue* task_queue_;
+    static atomic<TaskQueue*> task_queue_;
     static mutex mutex_;
 };
 
-TaskQueue* TaskQueue::task_queue_ = nullptr;
+atomic<TaskQueue*> TaskQueue::task_queue_;
 mutex TaskQueue::mutex_;
 
 int main() {
