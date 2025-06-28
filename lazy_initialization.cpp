@@ -1,30 +1,30 @@
+#include <atomic>
 #include <iostream>
 #include <mutex>
-#include <atomic>
 using namespace std;
 
 class TaskQueue {
   public:
     TaskQueue(const TaskQueue& other) = delete;
-    TaskQueue& operator =(const TaskQueue& other) = delete;
+    TaskQueue& operator=(const TaskQueue& other) = delete;
 
     // Lazy Initialization is not thread-safe
-    // Must use atmoic to ensure thread-safe 
+    // Must use atmoic to ensure thread-safe
     static TaskQueue* get_instance() {
-        TaskQueue* task = task_queue_.load();
+        TaskQueue* queue = task_queue_.load();
 
-        if (task == nullptr) {
+        if (queue == nullptr) {
             mutex_.lock();
-            TaskQueue* task = task_queue_.load();
-            if (task == nullptr) {
-                task = new TaskQueue;
-                task_queue_.store(task);
+            queue = task_queue_.load();
+            if (queue == nullptr) {
+                queue = new TaskQueue;
+                task_queue_.store(queue);
             }
-            
+
             mutex_.unlock();
         }
 
-        return task;
+        return queue;
     }
 
     void foo() {
